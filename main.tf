@@ -34,25 +34,3 @@ resource "google_compute_route" "hoproute" {
   dest_range        = var.dest_range_route
   next_hop_gateway  = var.next_hop_gateway_route
 }
-
-
-# resource "google_compute_instance" "my_instance" {
-#   name                      = var.vmInstance
-#   machine_type              = "f1-micro"
-#   zone                      = var.zone
-#   allow_stopping_for_update = true
-#   boot_disk {
-#     initialize_params {
-#       image = var.os_image
-#     }
-#   }
-
-#   network_interface {
-#     network = "default"
-#     # network    = google_compute_network.csye_network.self_link
-#     # subnetwork = google_compute_subnetwork.csye_subnetwork.self_link
-#     access_config {
-
-#     }
-#   }
-# }
