@@ -7,7 +7,7 @@ provider "google" {
 
 
 resource "google_compute_network" "csye6225_vpc_network" {
-  name                            = var.network
+  name                            = var.networ
   auto_create_subnetworks         = var.vpc_auto_create_subnetworks
   routing_mode                    = var.vpc_routing_mode
   delete_default_routes_on_create = var.vpc_delete_default_routes_on_create
