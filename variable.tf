@@ -72,3 +72,55 @@ variable "next_hop_gateway_route" {
 variable "vpc_region" {
   default = "us-central1"
 }
+
+variable "sourse_range_firewall" {
+  default = "0.0.0.0/0"
+}
+
+variable "allow_port_3000_name" {
+  default = "allow-port-3000"
+}
+
+variable "allow_port_5432_name" {
+  default = "allow-port-5432"
+}
+
+variable "allow_port_3000" {
+  default = "3000"
+}
+
+variable "allow_port_5432" {
+  default = "5432"
+}
+
+variable "allow_tcp_port_protocol" {
+  default = "tcp"
+}
+
+
+variable "deny_port_22" {
+  default = "22"
+}
+
+variable "webapp_vm_name" {
+  default = "webapp-instance"
+}
+
+variable "machine_type" {
+  default = "e2-standard-2"
+  
+}
+
+variable "base_image_name" {
+  default = "csye6225-image-a3"
+}
+
+
+variable "base_image_type" {
+  default = "pd-balanced"
+}
+
+
+variable "boot_disk_size" {
+  default = "100"
+}

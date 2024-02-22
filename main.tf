@@ -37,17 +37,18 @@ resource "google_compute_route" "hoproute" {
 
 // create vm from custom image gcp terraform
 resource "google_compute_instance" "webapp_vm" {
-  name         = "webapp-instance"
-  machine_type = "e2-standard-2"
+  name         = var.webapp_vm_name
+  machine_type = var.machine_type
   zone         = var.zone
   boot_disk {
     initialize_params {
-      image = "csye6225-image-a3"
-      type = "pd-balanced"
+      image = var.base_image_name
+      type = var.base_image_type
+      size = var.boot_disk_size
     }
   }
 
-  tags = ["allow-port-3000", "allow-port-5432"]
+  tags = [var.allow_port_3000_name, var.allow_port_5432_name]
   network_interface {
     # network = "default"
     network     = google_compute_network.csye6225_vpc_network.self_link
@@ -60,32 +61,32 @@ resource "google_compute_instance" "webapp_vm" {
 
 
 resource "google_compute_firewall" "allow_port_3000" {
-  name    = "allow-port-3000"
+  name    = var.allow_port_3000_name
   network = google_compute_network.csye6225_vpc_network.self_link
 
   allow {
-    protocol = "tcp"
-    ports    = ["3000"]
+    protocol = var.allow_tcp_port_protocol
+    ports    = [var.allow_port_3000]
   }
 
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["allow-port-3000"]
+  source_ranges = [var.sourse_range_firewall]
+  target_tags   = [var.allow_port_3000_name]
 }
 
 resource "google_compute_firewall" "allow_port_5432" {
-  name    = "allow-port-5432"
+  name    = var.allow_port_5432_name
   network = google_compute_network.csye6225_vpc_network.self_link
 
   allow {
-    protocol = "tcp"
-    ports    = ["5432"]
+    protocol = var.allow_tcp_port_protocol
+    ports    = [var.allow_port_5432]
   }
 
   deny {
-    protocol = "tcp"
-    ports    = ["22"]
+    protocol = var.allow_tcp_port_protocol
+    ports    = [var.deny_port_22]
   }
 
-  source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["allow-port-5432"]
+  source_ranges = [var.sourse_range_firewall]
+  target_tags   = [var.allow_port_5432_name]
 }
