@@ -89,18 +89,3 @@ resource "google_compute_firewall" "allow_port_5432" {
   source_ranges = ["0.0.0.0/0"]
   target_tags   = ["allow-port-5432"]
 }
-
-
-
-# resource "google_compute_firewall" "allow_internet_traffic" {
-#   name    = "allow-internet-traffic"
-#   network = google_compute_network.csye6225_vpc_network.self_link
-
-#   allow {
-#     protocol = "tcp"
-#     ports    = ["3000"]
-#   }
-
-#   source_ranges = ["0.0.0.0/0"]
-#   target_tags   = ["allow-internet-traffic"]
-# }
