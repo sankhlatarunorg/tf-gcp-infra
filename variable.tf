@@ -85,6 +85,10 @@ variable "allow_port_5432_name" {
   default = "allow-port-5432"
 }
 
+variable "deny_port_22_name" {
+  default = "deny-port-22"
+}
+
 variable "allow_port_3000" {
   default = "3000"
 }
@@ -123,4 +127,8 @@ variable "base_image_type" {
 
 variable "boot_disk_size" {
   default = "100"
+}
+
+variable "allow_postgres" {
+  default = "postgrestag"
 }
