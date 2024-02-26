@@ -11,3 +11,8 @@ terraform plan
 terraform destroy
 terraform apply
 terraform plan -var-file="terraform-tfvars/main.tfvars" 
+terraform apply  --auto-approve
+
+added google beta via terraform init 
+gcloud auth application-default loginyes
+enable cloud sql admin api
