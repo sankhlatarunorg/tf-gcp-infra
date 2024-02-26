@@ -132,3 +132,36 @@ variable "boot_disk_size" {
 variable "allow_postgres" {
   default = "postgrestag"
 }
+
+variable "global_address_name" {
+  default = "global-psconnect-ip"
+}
+
+variable "global_address_purpose" {
+  default = "PRIVATE_SERVICE_CONNECT"
+}
+
+
+variable "global_address_network_tier" {
+  default = "PREMIUM"
+}
+
+variable "global_address_address" {
+  default = "10.193.0.0"
+}
+
+variable "global_forwarding_rule_name" {
+  default = "globalrule"
+}
+
+variable "target_global_forwarding_rule" {
+  default = "all-apis"
+}
+
+variable "load_balancing_scheme" {
+  default = ""
+}
+
+variable "webapp_DB_Name" {
+  default = "webapp"
+}
