@@ -134,11 +134,11 @@ variable "allow_postgres" {
 }
 
 variable "global_address_name" {
-  default = "global-psconnect-ip"
+  default = "global-psconnect-ip-1"
 }
 
 variable "global_address_purpose" {
-  default = "PRIVATE_SERVICE_CONNECT"
+  default = "VPC_PEERING"
 }
 
 
@@ -164,4 +164,57 @@ variable "load_balancing_scheme" {
 
 variable "webapp_DB_Name" {
   default = "webapp"
+}
+
+
+variable "firewall_rules_policy"  {
+  type = list(object({
+    rule_type     = string
+    name          = string
+    port_protocol = string
+    port          = number
+    source_range  = string
+  }))
+  default = [ {
+    rule_type     = "allow"
+    name          = "allow-port-3000"
+    port_protocol = "tcp"
+    port          = 3000
+    source_range  = "0.0.0.0/0"
+  },
+  {
+    rule_type     = "allow"
+    name          = "allow-port-22"
+    port_protocol = "tcp"
+    port          = 22
+    source_range  = "0.0.0.0/0"
+  }]
+}
+
+variable "firewall_policy_to_apply_name" {
+  type = list(string)
+  default =[ "allow-port-3000", "allow-port-22"]
+  
+}
+
+variable "allow" {
+  default = "allow"
+}
+
+variable "deny" {
+  default = "deny"
+}
+
+variable "service_account_email" {
+  default = "489596881979-compute@developer.gserviceaccount.com"
+}
+
+variable "service_account_scopes" {
+  type = list(string)
+  default = ["https://www.googleapis.com/auth/devstorage.read_only", "https://www.googleapis.com/auth/logging.write", "https://www.googleapis.com/auth/monitoring.write", "https://www.googleapis.com/auth/service.management.readonly", "https://www.googleapis.com/auth/servicecontrol", "https://www.googleapis.com/auth/trace.append"]
+}
+
+variable "vpc_network_list" {
+  type = list(string)
+  default = ["csye6225-network"]
 }
