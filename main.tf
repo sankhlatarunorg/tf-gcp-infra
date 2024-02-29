@@ -62,11 +62,11 @@ resource "google_compute_instance" "webapp_vm" {
   }
     metadata = google_compute_project_metadata.web_metadata.metadata
 
-  metadata_startup_script = templatefile("metadata_script.tpl", {
-    DB_USER     = "webapp",
+  metadata_startup_script = templatefile(var.metadata_startup_script, {
+    DB_USER     = var.webapp_USER_Name,
     DB_PASSWORD = random_password.password.result,
     DB_HOST     = google_sql_database_instance.webapp_sql_instance.private_ip_address,
-    DB_NAME     = "webapp"
+    DB_NAME     = var.webapp_DB_Name
   })
 }
 
@@ -109,16 +109,16 @@ resource "google_compute_firewall" "custom_firewall_rules" {
 
 resource "google_sql_database_instance" "webapp_sql_instance" {
   name             = "webapp-sql-instance-${random_id.random_db_instance_id.hex}"
-  database_version = "MYSQL_8_0"
+  database_version = var.database_version
   region           = var.region
   depends_on = [ google_service_networking_connection.webapp_private_vpc_connection ]
   settings {
-    tier                = "db-f1-micro"
-    edition             = "ENTERPRISE"
-    disk_autoresize     = false
-    disk_size           = 10
-    disk_type           = "PD_HDD"
-    availability_type   = "REGIONAL"
+    tier                = var.database_tier
+    edition             = var.database_edition
+    disk_autoresize     = var.database_disk_autoresize
+    disk_size           = var.database_disk_size
+    disk_type           = var.database_disk_type
+    availability_type   = var.database_availability_type
     ip_configuration {
       ipv4_enabled    = false
       private_network = google_compute_network.csye6225_vpc_network[1].self_link
@@ -137,14 +137,14 @@ resource "google_compute_global_address" "global_address" {
   name          = var.global_address_name
   purpose       = var.global_address_purpose
   network       = google_compute_network.csye6225_vpc_network[1].self_link
-  address_type  = "INTERNAL"
+  address_type  = var.global_address_type
   prefix_length = 16
 }
 
 resource "google_service_networking_connection" "webapp_private_vpc_connection" {
   provider                = google-beta
   network                 = google_compute_network.csye6225_vpc_network[1].self_link
-  service                 = "servicenetworking.googleapis.com"
+  service                 = var.private_vpc_connection_service
   reserved_peering_ranges = [google_compute_global_address.global_address.name]
 }
 
