@@ -170,7 +170,6 @@ variable "webapp_USER_Name" {
   default = "webapp"
 }
 
-
 variable "firewall_rules_policy"  {
   type = list(object({
     rule_type     = string
@@ -187,8 +186,8 @@ variable "firewall_rules_policy"  {
     source_range  = "0.0.0.0/0"
   },
   {
-    rule_type     = "allow"
-    name          = "allow-port-22"
+    rule_type     = "deny"
+    name          = "deny-port-22"
     port_protocol = "tcp"
     port          = 22
     source_range  = "0.0.0.0/0"
@@ -197,7 +196,7 @@ variable "firewall_rules_policy"  {
 
 variable "firewall_policy_to_apply_name" {
   type = list(string)
-  default =[ "allow-port-3000", "allow-port-22"]
+  default =[ "allow-port-3000", "deny-port-22"]
   
 }
 
@@ -220,4 +219,50 @@ variable "service_account_scopes" {
 variable "vpc_network_list" {
   type = list(string)
   default = ["csye6225-network","csye6225-network-2"]
+}
+
+variable "database_version" {
+  default = "MYSQL_8_0"
+}
+
+variable "database_tier" {
+  default = "db-f1-micro"
+}
+
+variable "database_edition" {
+  default = "ENTERPRISE"
+}
+
+variable "database_disk_autoresize"{
+  type = bool
+  default = false
+}
+
+variable "database_disk_size" {
+  type = number
+  default = 10
+}
+
+variable "database_disk_type" {
+  type = string
+  default = "PD_HDD"
+}
+
+variable "database_availability_type" {
+  default = "REGIONAL"
+  
+}
+
+variable "global_address_type" {
+  default = "INTERNAL"
+  
+}
+
+variable "private_vpc_connection_service" {
+  default = "servicenetworking.googleapis.com"
+}
+
+variable "metadata_startup_script" {
+  default = "metadata_script.tpl"
+  
 }
