@@ -1,5 +1,4 @@
 credentials_file = "credentials.json"
-project = "csye-6225-tarun_sankhla"
 vpc_delete_default_routes_on_create ="true"
 vpc_routing_mode ="REGIONAL"
 vpc_auto_create_subnetworks = "false"
