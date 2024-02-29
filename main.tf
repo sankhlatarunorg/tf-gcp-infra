@@ -60,13 +60,15 @@ resource "google_compute_instance" "webapp_vm" {
     email  = var.service_account_email
     scopes = var.service_account_scopes
   }
-    metadata = google_compute_project_metadata.web_metadata.metadata
 
-  metadata_startup_script = templatefile(var.metadata_startup_script, {
-    DB_USER     = var.webapp_USER_Name,
+  depends_on = [ google_sql_database_instance.webapp_sql_instance ]
+  metadata = google_compute_project_metadata.web_metadata.metadata
+
+  metadata_startup_script = templatefile("metadata_script.tpl", {
+    DB_USER     = "webapp",
     DB_PASSWORD = random_password.password.result,
     DB_HOST     = google_sql_database_instance.webapp_sql_instance.private_ip_address,
-    DB_NAME     = var.webapp_DB_Name
+    DB_NAME     = "webapp"
   })
 }
 
