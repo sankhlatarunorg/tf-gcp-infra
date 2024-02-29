@@ -1,5 +1,5 @@
  variable "project" {
-   default = "csye-6225-tarun-002294529"
+   default = "csye6225tarundev"
  }
 
  variable "credentials_file" {
@@ -166,6 +166,10 @@ variable "webapp_DB_Name" {
   default = "webapp"
 }
 
+variable "webapp_USER_Name" {
+  default = "webapp"
+}
+
 
 variable "firewall_rules_policy"  {
   type = list(object({
@@ -206,9 +210,8 @@ variable "deny" {
 }
 
 variable "service_account_email" {
-  default = "489596881979-compute@developer.gserviceaccount.com"
+  default = "738558818349-compute@developer.gserviceaccount.com"
 }
-
 variable "service_account_scopes" {
   type = list(string)
   default = ["https://www.googleapis.com/auth/devstorage.read_only", "https://www.googleapis.com/auth/logging.write", "https://www.googleapis.com/auth/monitoring.write", "https://www.googleapis.com/auth/service.management.readonly", "https://www.googleapis.com/auth/servicecontrol", "https://www.googleapis.com/auth/trace.append"]
@@ -216,5 +219,5 @@ variable "service_account_scopes" {
 
 variable "vpc_network_list" {
   type = list(string)
-  default = ["csye6225-network"]
+  default = ["csye6225-network","csye6225-network-2"]
 }
