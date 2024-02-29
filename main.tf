@@ -19,19 +19,19 @@ resource "google_compute_subnetwork" "webapp" {
   name          = var.subnetwork_webapp
   ip_cidr_range = var.webapp_subnetwork_ip_cidr_range
   region        = var.vpc_region
-  network       = google_compute_network.csye6225_vpc_network[0].id
+  network       = google_compute_network.csye6225_vpc_network[1].id
 }
 
 resource "google_compute_subnetwork" "db" {
   name          = var.subnetwork_db
   ip_cidr_range = var.db_subnetwork_ip_cidr_range
   region        = var.vpc_region
-  network       =  google_compute_network.csye6225_vpc_network[0].id
+  network       =  google_compute_network.csye6225_vpc_network[1].id
 }
 
 resource "google_compute_route" "hoproute" {
   name             = var.route_hop
-  network          = google_compute_network.csye6225_vpc_network[0].self_link
+  network          = google_compute_network.csye6225_vpc_network[1].self_link
   dest_range       = var.dest_range_route
   next_hop_gateway = var.next_hop_gateway_route
 }
@@ -50,7 +50,7 @@ resource "google_compute_instance" "webapp_vm" {
   allow_stopping_for_update = true
   tags                      = var.firewall_policy_to_apply_name
   network_interface {
-    network    = google_compute_network.csye6225_vpc_network[0].self_link
+    network    = google_compute_network.csye6225_vpc_network[1].self_link
     subnetwork = google_compute_subnetwork.webapp.self_link
     access_config {
 
@@ -62,42 +62,18 @@ resource "google_compute_instance" "webapp_vm" {
   }
     metadata = google_compute_project_metadata.web_metadata.metadata
 
-    
-    metadata_startup_script = <<-EOF
-#!/bin/bash
-echo "Web application is starting up..."
-if [[ ! -e /tmp/webapp/.env ]]; then
-  touch /tmp/webapp/.env
-fi
-
-if [[  ! -e "/var/run/webapp_configured" ]]; then
-  touch $Mark_FILE
-  echo "DB_USER=\$(curl -H \"Metadata-Flavor: Google\" http://metadata.google.internal/computeMetadata/v1/instance/attributes/DB_USER)" >> /tmp/webapp/.env
-  echo "DB_PASSWORD=\$(curl -H \"Metadata-Flavor: Google\" http://metadata.google.internal/computeMetadata/v1/instance/attributes/DB_PASSWORD)" >> /tmp/webapp/.env
-  echo "DB_HOST=\$(curl -H \"Metadata-Flavor: Google\" http://metadata.google.internal/computeMetadata/v1/instance/attributes/DB_HOST)" >> /tmp/webapp/.env
-  echo "DB_NAME=\$(curl -H \"Metadata-Flavor: Google\" http://metadata.google.internal/computeMetadata/v1/instance/attributes/DB_NAME)" >> /tmp/webapp/.env
-  # Additional configurations...
-
-  touch /var/run/webapp_configured
-else
-  echo "Web application is already configured."
-fi
-sudo systemctl stop csye-6225
-sudo systemctl start csye-6225
-sudo systemctl status csye-6225
-echo "Web application is configured."
-echo $DB_USER
-echo $DB_PASSWORD
-echo $DB_HOST
-echo $DB_NAME
-echo "Web application is running."
-EOF
+  metadata_startup_script = templatefile("metadata_script.tpl", {
+    DB_USER     = "webapp",
+    DB_PASSWORD = random_password.password.result,
+    DB_HOST     = google_sql_database_instance.webapp_sql_instance.private_ip_address,
+    DB_NAME     = "webapp"
+  })
 }
 
 resource "google_compute_project_metadata" "web_metadata" {
   metadata = {
     "DB_NAME"       = var.webapp_DB_Name
-    "DB_USER"       = var.webapp_DB_Name
+    "DB_USER"       = var.webapp_USER_Name
     "DB_PASSWORD"   = random_password.password.result
     "DB_HOST"       = google_sql_database_instance.webapp_sql_instance.private_ip_address
   }
@@ -108,7 +84,7 @@ resource "google_compute_firewall" "custom_firewall_rules" {
 
 
   name    = var.firewall_rules_policy[count.index].name
-  network = google_compute_network.csye6225_vpc_network[0].self_link
+  network = google_compute_network.csye6225_vpc_network[1].self_link
 
   dynamic "allow" {
     for_each = var.firewall_rules_policy[count.index].rule_type == var.allow ? [1] : []
@@ -145,7 +121,7 @@ resource "google_sql_database_instance" "webapp_sql_instance" {
     availability_type   = "REGIONAL"
     ip_configuration {
       ipv4_enabled    = false
-      private_network = google_compute_network.csye6225_vpc_network[0].self_link
+      private_network = google_compute_network.csye6225_vpc_network[1].self_link
     }
     backup_configuration {
       binary_log_enabled = true
@@ -160,14 +136,14 @@ resource "google_compute_global_address" "global_address" {
   project       = var.project
   name          = var.global_address_name
   purpose       = var.global_address_purpose
-  network       = google_compute_network.csye6225_vpc_network[0].self_link
+  network       = google_compute_network.csye6225_vpc_network[1].self_link
   address_type  = "INTERNAL"
   prefix_length = 16
 }
 
 resource "google_service_networking_connection" "webapp_private_vpc_connection" {
   provider                = google-beta
-  network                 = google_compute_network.csye6225_vpc_network[0].self_link
+  network                 = google_compute_network.csye6225_vpc_network[1].self_link
   service                 = "servicenetworking.googleapis.com"
   reserved_peering_ranges = [google_compute_global_address.global_address.name]
 }
@@ -178,7 +154,7 @@ resource "google_sql_database" "sql_database" {
 }
 
 resource "google_sql_user" "sql_user" {
-  name      = var.webapp_DB_Name
+  name      = var.webapp_USER_Name
   instance  = google_sql_database_instance.webapp_sql_instance.name
   password  = random_password.password.result
 }
