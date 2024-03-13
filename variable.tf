@@ -186,8 +186,8 @@ variable "firewall_rules_policy"  {
     source_range  = "0.0.0.0/0"
   },
   {
-    rule_type     = "allow"
-    name          = "allow-port-22"
+    rule_type     = "deny"
+    name          = "deny-port-22"
     port_protocol = "tcp"
     port          = 22
     source_range  = "0.0.0.0/0"
@@ -196,7 +196,7 @@ variable "firewall_rules_policy"  {
 
 variable "firewall_policy_to_apply_name" {
   type = list(string)
-  default =[ "allow-port-3000", "allow-port-22"]
+  default =[ "allow-port-3000", "deny-port-22"]
   
 }
 
