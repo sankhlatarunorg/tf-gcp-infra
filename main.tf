@@ -19,23 +19,44 @@ resource "google_compute_subnetwork" "webapp" {
   name          = var.subnetwork_webapp
   ip_cidr_range = var.webapp_subnetwork_ip_cidr_range
   region        = var.vpc_region
-  network       = google_compute_network.csye6225_vpc_network[1].id
+  network       = google_compute_network.csye6225_vpc_network[0].id
 }
 
 resource "google_compute_subnetwork" "db" {
   name          = var.subnetwork_db
   ip_cidr_range = var.db_subnetwork_ip_cidr_range
   region        = var.vpc_region
-  network       =  google_compute_network.csye6225_vpc_network[1].id
+  network       =  google_compute_network.csye6225_vpc_network[0].id
 }
 
 resource "google_compute_route" "hoproute" {
   name             = var.route_hop
-  network          = google_compute_network.csye6225_vpc_network[1].self_link
+  network          = google_compute_network.csye6225_vpc_network[0].self_link
   dest_range       = var.dest_range_route
   next_hop_gateway = var.next_hop_gateway_route
 }
 
+resource "google_service_account" "default" {
+  account_id   = var.google_service_account_name
+  display_name = var.google_service_account_name
+  project     = var.project 
+}
+
+resource "google_project_iam_binding" "csye_service_account_logging" {
+  project = var.project
+  role    = var.csye_service_account_logging_role
+  members = [
+    "serviceAccount:${google_service_account.default.email}"
+  ]
+}
+
+resource "google_project_iam_binding" "csye_service_account_metric_writer" {
+  project = var.project
+  role    = var.csye_service_account_metric_writer_role
+  members = [
+    "serviceAccount:${google_service_account.default.email}"
+  ]
+}
 resource "google_compute_instance" "webapp_vm" {
   name         = var.webapp_vm_name
   machine_type = var.machine_type
@@ -50,15 +71,15 @@ resource "google_compute_instance" "webapp_vm" {
   allow_stopping_for_update = true
   tags                      = var.firewall_policy_to_apply_name
   network_interface {
-    network    = google_compute_network.csye6225_vpc_network[1].self_link
+    network    = google_compute_network.csye6225_vpc_network[0].self_link
     subnetwork = google_compute_subnetwork.webapp.self_link
     access_config {
 
     }
   }
   service_account {
-    email  = var.service_account_email
-    scopes = var.service_account_scopes
+    email  = google_service_account.default.email
+    scopes = var.service_account_scopes_logging
   }
 
   depends_on = [ google_sql_database_instance.webapp_sql_instance ]
@@ -72,6 +93,16 @@ resource "google_compute_instance" "webapp_vm" {
   })
 }
 
+resource "google_dns_record_set" "webapp_dns_record_set" {
+  name    = var.dns_record_set_name
+  type    = var.dns_record_type
+  ttl     = var.dns_record_set_ttl
+  managed_zone = var.dns_record_zone
+
+  rrdatas = [
+    google_compute_instance.webapp_vm.network_interface[0].access_config[0].nat_ip
+  ]
+}
 resource "google_compute_project_metadata" "web_metadata" {
   metadata = {
     "DB_NAME"       = var.webapp_DB_Name
@@ -86,7 +117,7 @@ resource "google_compute_firewall" "custom_firewall_rules" {
 
 
   name    = var.firewall_rules_policy[count.index].name
-  network = google_compute_network.csye6225_vpc_network[1].self_link
+  network = google_compute_network.csye6225_vpc_network[0].self_link
 
   dynamic "allow" {
     for_each = var.firewall_rules_policy[count.index].rule_type == var.allow ? [1] : []
@@ -123,7 +154,7 @@ resource "google_sql_database_instance" "webapp_sql_instance" {
     availability_type   = var.database_availability_type
     ip_configuration {
       ipv4_enabled    = false
-      private_network = google_compute_network.csye6225_vpc_network[1].self_link
+      private_network = google_compute_network.csye6225_vpc_network[0].self_link
     }
     backup_configuration {
       binary_log_enabled = true
@@ -138,16 +169,17 @@ resource "google_compute_global_address" "global_address" {
   project       = var.project
   name          = var.global_address_name
   purpose       = var.global_address_purpose
-  network       = google_compute_network.csye6225_vpc_network[1].self_link
+  network       = google_compute_network.csye6225_vpc_network[0].self_link
   address_type  = var.global_address_type
   prefix_length = 16
 }
 
 resource "google_service_networking_connection" "webapp_private_vpc_connection" {
   provider                = google-beta
-  network                 = google_compute_network.csye6225_vpc_network[1].self_link
+  network                 = google_compute_network.csye6225_vpc_network[0].self_link
   service                 = var.private_vpc_connection_service
   reserved_peering_ranges = [google_compute_global_address.global_address.name]
+  deletion_policy = "ABANDON"
 }
 
 resource "google_sql_database" "sql_database" {
