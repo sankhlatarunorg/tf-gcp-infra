@@ -230,7 +230,7 @@ variable "database_version" {
 }
 
 variable "database_tier" {
-  default = "db-f1-micro"
+  default = "db-n1-standard-1"
 }
 
 variable "database_edition" {
@@ -244,12 +244,12 @@ variable "database_disk_autoresize"{
 
 variable "database_disk_size" {
   type = number
-  default = 10
+  default = 100
 }
 
 variable "database_disk_type" {
   type = string
-  default = "PD_HDD"
+  default = "PD_SSD"
 }
 
 variable "database_availability_type" {

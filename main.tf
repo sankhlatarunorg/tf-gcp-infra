@@ -82,7 +82,7 @@ resource "google_compute_instance" "webapp_vm" {
     scopes = var.service_account_scopes_logging
   }
 
-  depends_on = [ google_sql_database_instance.webapp_sql_instance ]
+  depends_on = [ google_sql_database_instance.webapp_sql_instance,  google_service_account.default, google_project_iam_binding.csye_service_account_logging, google_project_iam_binding.csye_service_account_metric_writer]
   metadata = google_compute_project_metadata.web_metadata.metadata
 
   metadata_startup_script = templatefile("metadata_script.tpl", {
@@ -147,11 +147,11 @@ resource "google_sql_database_instance" "webapp_sql_instance" {
   depends_on = [ google_service_networking_connection.webapp_private_vpc_connection ]
   settings {
     tier                = var.database_tier
-    edition             = var.database_edition
-    disk_autoresize     = var.database_disk_autoresize
+    # edition             = var.database_edition
+    # disk_autoresize     = var.database_disk_autoresize
     disk_size           = var.database_disk_size
-    disk_type           = var.database_disk_type
-    availability_type   = var.database_availability_type
+    # disk_type           = var.database_disk_type
+    # availability_type   = var.database_availability_type
     ip_configuration {
       ipv4_enabled    = false
       private_network = google_compute_network.csye6225_vpc_network[0].self_link
