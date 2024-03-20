@@ -107,7 +107,7 @@ variable "deny_port_22" {
 }
 
 variable "webapp_vm_name" {
-  default = "webapp-instance"
+  default = "webapp-instance-csye6225"
 }
 
 variable "machine_type" {
@@ -116,7 +116,7 @@ variable "machine_type" {
 }
 
 variable "base_image_name" {
-  default = "csye6225-image-a3"
+  default = "csye6225-image-a3-trial"
 }
 
 
@@ -216,9 +216,13 @@ variable "service_account_scopes" {
   default = ["https://www.googleapis.com/auth/devstorage.read_only", "https://www.googleapis.com/auth/logging.write", "https://www.googleapis.com/auth/monitoring.write", "https://www.googleapis.com/auth/service.management.readonly", "https://www.googleapis.com/auth/servicecontrol", "https://www.googleapis.com/auth/trace.append"]
 }
 
+variable "service_account_scopes_csye_vm" {
+  type = list(string)
+  default = ["logging-write", "monitoring", "monitoring-read", "monitoring-write"]
+}
 variable "vpc_network_list" {
   type = list(string)
-  default = ["csye6225-network","csye6225-network-2"]
+  default = ["csye6225-network-01"]
 }
 
 variable "database_version" {
@@ -226,7 +230,7 @@ variable "database_version" {
 }
 
 variable "database_tier" {
-  default = "db-f1-micro"
+  default = "db-n1-standard-1"
 }
 
 variable "database_edition" {
@@ -240,12 +244,12 @@ variable "database_disk_autoresize"{
 
 variable "database_disk_size" {
   type = number
-  default = 10
+  default = 100
 }
 
 variable "database_disk_type" {
   type = string
-  default = "PD_HDD"
+  default = "PD_SSD"
 }
 
 variable "database_availability_type" {
@@ -265,4 +269,38 @@ variable "private_vpc_connection_service" {
 variable "metadata_startup_script" {
   default = "metadata_script.tpl"
   
+}
+
+variable "dns_record_type" {
+  default = "A"
+}
+
+variable "dns_record_zone" {
+  default = "csye-6225-zone"
+}
+
+variable "dns_record_set_name" {
+  default = "tarunsankhla.me."
+}
+
+variable "dns_record_set_ttl" {
+  default = "300"
+}
+
+variable "service_account_scopes_logging" {
+  type = list(string)
+  default = ["logging-write","monitoring-read","monitoring-write"]
+
+}
+
+variable "csye_service_account_logging_role" {
+  default = "roles/logging.admin"
+}
+
+variable "csye_service_account_metric_writer_role" {
+  default = "roles/monitoring.metricWriter"
+}
+
+variable "google_service_account_name" {
+  default = "webapp-service-account"
 }
