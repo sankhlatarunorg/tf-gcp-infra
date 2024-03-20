@@ -304,3 +304,8 @@ variable "csye_service_account_metric_writer_role" {
 variable "google_service_account_name" {
   default = "webapp-service-account"
 }
+
+variable "deletion_policy" {
+  default = "ABANDON"
+  
+}
