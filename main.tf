@@ -193,9 +193,66 @@ resource "google_sql_user" "sql_user" {
   password  = random_password.password.result
 }
 
+resource "google_pubsub_topic" "verify_email_topic" {
+  name = "verify_email"
+}
+
+resource "google_pubsub_subscription" "cloud_function_subscription" {
+  name  = "cloud_function_subscription"
+  topic = google_pubsub_topic.verify_email_topic.name
+  ack_deadline_seconds = 10  # Adjust as needed
+  # push_config {
+  #   push_endpoint = "https://cloudfunctions.googleapis.com/v1/projects/${var.project}/locations/${var.region}/functions/${google_cloudfunctions_function.process_new_user_message.name}"
+  # }
+}
+
+resource "google_storage_bucket" "bucket" {
+  name     = "${var.project}-gcf-source"  # Every bucket name must be globally unique
+  location = "US"
+  uniform_bucket_level_access = true
+}
+
+resource "google_storage_bucket_object" "csye_object" {
+  name   = "serverless-bucket"
+  bucket = google_storage_bucket.bucket.name
+  source = "./serverless.zip"  # Add path to the zipped function source code
+}
+
+# Define the Cloud Function
+resource "google_cloudfunctions2_function" "process_new_user_message" {
+  name        = "process-new-user-message"
+  description = "Process new user messages from Pub/Sub"
+  location = "us-central1"
+
+  build_config {
+    runtime = "nodejs18"
+    entry_point = "processNewUserMessage"  
+    source {
+      storage_source {
+        bucket = google_storage_bucket.bucket.name
+        object = google_storage_bucket_object.csye_object.name
+      }
+    }
+  }
+  service_config {
+    min_instance_count    = 1
+    available_memory      = "256M"
+    timeout_seconds       = 60
+    service_account_email = google_service_account.default.email
+  }
+
+  event_trigger {
+    trigger_region = "us-central1"
+    event_type = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic = google_pubsub_topic.verify_email_topic.id
+    retry_policy = "RETRY_POLICY_RETRY"
+  }
+}
+
+
 resource "random_password" "password" {
   length           = 16
-  special          = true
+  special          = false
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
