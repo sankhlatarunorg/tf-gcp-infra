@@ -257,6 +257,12 @@ resource "google_cloudfunctions2_function" "process_new_user_message" {
     timeout_seconds       = 60
     service_account_email = google_service_account.default.email
     vpc_connector = google_vpc_access_connector.conn.name
+    environment_variables = {
+      SERVICE_CONFIG_TEST     = "config_test"
+      db_host="${google_sql_database_instance.db.private_ip_address}"
+      db_username="${google_sql_user.dbuser.name}"
+      db_password="${random_password.dbpass.result}"
+    } 
   }
 
   event_trigger {
