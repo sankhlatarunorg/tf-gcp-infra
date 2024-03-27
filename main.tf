@@ -218,6 +218,23 @@ resource "google_storage_bucket_object" "csye_object" {
   source = "./serverless.zip"  # Add path to the zipped function source code
 }
 
+
+
+resource "google_compute_subnetwork" "default" {
+  name          = "vpc-connector"
+  ip_cidr_range = "10.2.0.0/28"
+  region        = "us-central1"
+  network       =  google_compute_network.csye6225_vpc_network[0].id
+}
+
+resource "google_vpc_access_connector" "conn" {
+  name          = "conn"
+  subnet {
+    name = google_compute_subnetwork.default.name
+  }
+  machine_type = "e2-standard-4"
+}
+
 # Define the Cloud Function
 resource "google_cloudfunctions2_function" "process_new_user_message" {
   name        = "process-new-user-message"
@@ -239,6 +256,7 @@ resource "google_cloudfunctions2_function" "process_new_user_message" {
     available_memory      = "256M"
     timeout_seconds       = 60
     service_account_email = google_service_account.default.email
+    vpc_connector = google_vpc_access_connector.conn.name
   }
 
   event_trigger {
