@@ -37,25 +37,21 @@ resource "google_compute_route" "hoproute" {
 }
 
 resource "google_service_account" "default" {
-  account_id   = var.google_service_account_name
-  display_name = var.google_service_account_name
-  project     = var.project 
+  account_id    = var.google_service_account_name
+  display_name  = var.google_service_account_name
+  project       = var.project 
 }
 
 resource "google_project_iam_binding" "csye_service_account_logging" {
   project = var.project
   role    = var.csye_service_account_logging_role
-  members = [
-    "serviceAccount:${google_service_account.default.email}"
-  ]
+  members = [ "serviceAccount:${google_service_account.default.email}"]
 }
 
 resource "google_project_iam_binding" "csye_service_account_metric_writer" {
   project = var.project
   role    = var.csye_service_account_metric_writer_role
-  members = [
-    "serviceAccount:${google_service_account.default.email}"
-  ]
+  members = [ "serviceAccount:${google_service_account.default.email}"]
 }
 resource "google_project_iam_binding" "pubsub" {
   project = var.project
@@ -73,9 +69,19 @@ resource "google_pubsub_subscription_iam_binding" "webapp_subscription_binding" 
 }
 
 resource "google_compute_instance" "webapp_vm" {
-  name         = var.webapp_vm_name
-  machine_type = var.machine_type
-  zone         = var.zone
+  name                      = var.webapp_vm_name
+  machine_type              = var.machine_type
+  zone                      = var.zone
+  allow_stopping_for_update = true
+  tags                      = var.firewall_policy_to_apply_name
+  depends_on                = [ google_sql_database_instance.webapp_sql_instance,  google_service_account.default, google_project_iam_binding.csye_service_account_logging, google_project_iam_binding.csye_service_account_metric_writer]
+  metadata                  = google_compute_project_metadata.web_metadata.metadata
+  metadata_startup_script   = templatefile("metadata_script.tpl", {
+    DB_USER     = "webapp",
+    DB_PASSWORD = random_password.password.result,
+    DB_HOST     = google_sql_database_instance.webapp_sql_instance.private_ip_address,
+    DB_NAME     = "webapp"
+  })
   boot_disk {
     initialize_params {
       image = var.base_image_name
@@ -83,8 +89,6 @@ resource "google_compute_instance" "webapp_vm" {
       size  = var.boot_disk_size
     }
   }
-  allow_stopping_for_update = true
-  tags                      = var.firewall_policy_to_apply_name
   network_interface {
     network    = google_compute_network.csye6225_vpc_network[0].self_link
     subnetwork = google_compute_subnetwork.webapp.self_link
@@ -96,27 +100,14 @@ resource "google_compute_instance" "webapp_vm" {
     email  = google_service_account.default.email
     scopes = var.service_account_scopes_logging
   }
-
-  depends_on = [ google_sql_database_instance.webapp_sql_instance,  google_service_account.default, google_project_iam_binding.csye_service_account_logging, google_project_iam_binding.csye_service_account_metric_writer]
-  metadata = google_compute_project_metadata.web_metadata.metadata
-
-  metadata_startup_script = templatefile("metadata_script.tpl", {
-    DB_USER     = "webapp",
-    DB_PASSWORD = random_password.password.result,
-    DB_HOST     = google_sql_database_instance.webapp_sql_instance.private_ip_address,
-    DB_NAME     = "webapp"
-  })
 }
 
 resource "google_dns_record_set" "webapp_dns_record_set" {
-  name    = var.dns_record_set_name
-  type    = var.dns_record_type
-  ttl     = var.dns_record_set_ttl
-  managed_zone = var.dns_record_zone
-
-  rrdatas = [
-    google_compute_instance.webapp_vm.network_interface[0].access_config[0].nat_ip
-  ]
+  name          = var.dns_record_set_name
+  type          = var.dns_record_type
+  ttl           = var.dns_record_set_ttl
+  managed_zone  = var.dns_record_zone
+  rrdatas     = [ google_compute_instance.webapp_vm.network_interface[0].access_config[0].nat_ip ]
 }
 resource "google_compute_project_metadata" "web_metadata" {
   metadata = {
@@ -129,14 +120,11 @@ resource "google_compute_project_metadata" "web_metadata" {
 
 resource "google_compute_firewall" "custom_firewall_rules" {
   count = length(var.firewall_rules_policy)
-
-
   name    = var.firewall_rules_policy[count.index].name
   network = google_compute_network.csye6225_vpc_network[0].self_link
 
   dynamic "allow" {
     for_each = var.firewall_rules_policy[count.index].rule_type == var.allow ? [1] : []
-
     content {
       protocol = var.firewall_rules_policy[count.index].port_protocol
       ports    = [var.firewall_rules_policy[count.index].port]
@@ -145,7 +133,6 @@ resource "google_compute_firewall" "custom_firewall_rules" {
 
   dynamic "deny" {
     for_each = var.firewall_rules_policy[count.index].rule_type == var.deny ? [1] : []
-
     content {
       protocol = var.firewall_rules_policy[count.index].port_protocol
       ports    = [var.firewall_rules_policy[count.index].port]
@@ -159,7 +146,8 @@ resource "google_sql_database_instance" "webapp_sql_instance" {
   name             = "webapp-sql-instance-${random_id.random_db_instance_id.hex}"
   database_version = var.database_version
   region           = var.region
-  depends_on = [ google_service_networking_connection.webapp_private_vpc_connection ]
+  depends_on       = [ google_service_networking_connection.webapp_private_vpc_connection ]
+  deletion_protection = false
   settings {
     tier                = var.database_tier
     # edition             = var.database_edition
@@ -172,11 +160,10 @@ resource "google_sql_database_instance" "webapp_sql_instance" {
       private_network = google_compute_network.csye6225_vpc_network[0].self_link
     }
     backup_configuration {
-      binary_log_enabled = true
-      enabled = true
+      binary_log_enabled  = true
+      enabled             = true
     }
   }
-  deletion_protection = false
 }
 
 resource "google_compute_global_address" "global_address" {
