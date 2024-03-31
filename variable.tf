@@ -430,3 +430,8 @@ variable "google_pubsub_subscription_expiration_policy_ttl" {
   default = "604800s"
 
 }
+
+
+variable "webapp_vm_instance_template_name" {
+  default = "webapp-instance-template"
+}
