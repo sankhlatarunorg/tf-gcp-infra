@@ -69,26 +69,58 @@ resource "google_pubsub_subscription_iam_binding" "webapp_subscription_binding" 
   members = var.google_pubsub_subscription_iam_binding_members
 }
 
-resource "google_compute_instance" "webapp_vm" {
-  name                      = var.webapp_vm_name
-  machine_type              = var.machine_type
-  zone                      = var.zone
-  allow_stopping_for_update = true
-  tags                      = var.firewall_policy_to_apply_name
-  depends_on                = [ google_sql_database_instance.webapp_sql_instance,  google_service_account.default, google_project_iam_binding.csye_service_account_logging, google_project_iam_binding.csye_service_account_metric_writer]
-  metadata                  = google_compute_project_metadata.web_metadata.metadata
-  metadata_startup_script   = templatefile("metadata_script.tpl", {
+# resource "google_compute_instance" "webapp_vm" {
+#   name                      = var.webapp_vm_name
+#   machine_type              = var.machine_type
+#   zone                      = var.zone
+#   allow_stopping_for_update = true
+#   tags                      = var.firewall_policy_to_apply_name
+#   depends_on                = [ google_sql_database_instance.webapp_sql_instance,  google_service_account.default, google_project_iam_binding.csye_service_account_logging, google_project_iam_binding.csye_service_account_metric_writer]
+#   metadata                  = google_compute_project_metadata.web_metadata.metadata
+#   metadata_startup_script   = templatefile("metadata_script.tpl", {
+#     DB_USER     = "webapp",
+#     DB_PASSWORD = random_password.password.result,
+#     DB_HOST     = google_sql_database_instance.webapp_sql_instance.private_ip_address,
+#     DB_NAME     = "webapp"
+#   })
+#   boot_disk {
+#     initialize_params {
+#       image = var.base_image_name
+#       type  = var.base_image_type
+#       size  = var.boot_disk_size
+#     }
+#   }
+#   network_interface {
+#     network    = google_compute_network.csye6225_vpc_network[0].self_link
+#     subnetwork = google_compute_subnetwork.webapp.self_link
+#     access_config {
+
+#     }
+#   }
+#   service_account {
+#     email  = google_service_account.default.email
+#     scopes = var.service_account_scopes_logging
+#   }
+# }
+
+resource "google_compute_instance_template" "webapp_vm_instance_template" {
+  name = var.webapp_vm_instance_template_name
+  machine_type = var.machine_type
+  tags = var.firewall_policy_to_apply_name
+  region = var.region
+  depends_on = [ google_sql_database_instance.webapp_sql_instance,  google_service_account.default, google_project_iam_binding.csye_service_account_logging, google_project_iam_binding.csye_service_account_metric_writer]
+  metadata = google_compute_project_metadata.web_metadata.metadata
+  metadata_startup_script = templatefile("metadata_script.tpl", {
     DB_USER     = "webapp",
     DB_PASSWORD = random_password.password.result,
     DB_HOST     = google_sql_database_instance.webapp_sql_instance.private_ip_address,
     DB_NAME     = "webapp"
   })
-  boot_disk {
-    initialize_params {
-      image = var.base_image_name
-      type  = var.base_image_type
-      size  = var.boot_disk_size
-    }
+  disk {
+    source_image = var.base_image_name
+    auto_delete  = true
+    disk_size_gb = var.boot_disk_size
+    disk_type    = var.base_image_type
   }
   network_interface {
     network    = google_compute_network.csye6225_vpc_network[0].self_link
@@ -102,6 +134,54 @@ resource "google_compute_instance" "webapp_vm" {
     scopes = var.service_account_scopes_logging
   }
 }
+
+resource "google_compute_http_health_check" "default" {
+  name         = "webapp-health-check"
+  request_path = "/healthz"
+  port = 80
+  timeout_sec        = 1
+  check_interval_sec = 1
+  unhealthy_threshold = 3
+  healthy_threshold = 3
+}
+
+resource "google_compute_autoscaler" "webapp_autoscaler" {
+  name                   = "webapp-autoscaler"
+  target = google_compute_instance_group_manager.webapp_instance_group_manager.instance_group
+  autoscaling_policy {
+    min_replicas = 1
+    max_replicas = 10
+    cooldown_period = 60
+    cpu_utilization {
+      target = 0.05
+    }
+  }
+}
+
+resource "google_compute_region_instance_group_manager" "webapp_instance_group_manager" {
+  name               = "webapp-instance-group-manager"
+  region             = var.region
+  base_instance_name = "webapp-instance"
+  target_size        = 1
+
+  version {
+    instance_template = google_compute_instance_template.webapp_vm_instance_template.self_link
+  }
+
+  named_port {
+    name = "https"
+    port = 443
+  }
+
+  auto_healing_policies {
+    health_check   = google_compute_http_health_check.default.self_link
+    initial_delay_sec = 300
+  }
+
+  target_pools = [google_compute_target_pool.webapp_target_pool.self_link]
+
+}
+
 
 resource "google_dns_record_set" "webapp_dns_record_set" {
   name          = var.dns_record_set_name
@@ -290,6 +370,15 @@ resource "google_sql_user" "sql_user" {
   name      = var.webapp_USER_Name
   instance  = google_sql_database_instance.webapp_sql_instance.name
   password  = random_password.password.result
+}
+
+resource "google_compute_managed_ssl_certificate" "webapp_default" {
+  provider = google-beta
+  name     = "myservice-ssl-cert"
+
+  managed {
+    domains = ["example.com"]
+  }
 }
 
 resource "random_password" "password" {
