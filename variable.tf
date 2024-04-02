@@ -284,7 +284,7 @@ variable "dns_record_set_name" {
 }
 
 variable "dns_record_set_ttl" {
-  default = "300"
+  default = "60"
 }
 
 variable "service_account_scopes_logging" {
@@ -433,5 +433,5 @@ variable "google_pubsub_subscription_expiration_policy_ttl" {
 
 
 variable "webapp_vm_instance_template_name" {
-  default = "webapp-instance-template"
+  default = "webapp-vm-instance-template"
 }
