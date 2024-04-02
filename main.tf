@@ -107,8 +107,9 @@ resource "google_compute_health_check" "default" {
 
   http_health_check {
     request_path = "/healthz"
-    response = "Health check completed successfully"
-    port_specification = "USE_SERVING_PORT"
+    port = 3000
+    # response = "Health check completed successfully"
+    # port_specification = "USE_SERVING_PORT"
   }
 }
 
@@ -118,7 +119,7 @@ resource "google_compute_region_autoscaler" "webapp_autoscaler" {
   depends_on = [ google_compute_region_instance_group_manager.webapp_instance_group_manager ]
   autoscaling_policy {
     min_replicas = 1
-    max_replicas = 3
+    max_replicas = 5
     cooldown_period = 60
     cpu_utilization {
       target = 0.05
@@ -138,8 +139,8 @@ resource "google_compute_region_instance_group_manager" "webapp_instance_group_m
   }
 
   named_port {
-    name = "https"
-    port = 443
+    name = "app"
+    port = 3000
   }
 
   auto_healing_policies {
@@ -442,7 +443,7 @@ resource "google_compute_target_http_proxy" "default" {
 
 resource "google_compute_global_forwarding_rule" "default" {
   name                  = "default"
-  project = var.project
+  project               = var.project
   provider              = google-beta
   ip_protocol           = "TCP"
   load_balancing_scheme = "EXTERNAL"
