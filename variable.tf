@@ -116,7 +116,7 @@ variable "machine_type" {
 }
 
 variable "base_image_name" {
-  default = "csye6225-image-a7"
+  default = "csye6225-image-a7-demo"
 }
 
 
