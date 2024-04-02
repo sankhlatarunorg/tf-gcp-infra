@@ -425,3 +425,124 @@ variable "google_pubsub_subscription_expiration_policy_ttl" {
   default = "604800s"
   
 }
+
+variable "serverless_connector_name" {
+  default = "serverless-connector"
+
+}
+
+variable "pubsub_role" {
+  default = "roles/pubsub.publisher"  
+}
+
+variable "pubsub_role_subscriber" {
+  default = "roles/pubsub.subscriber"
+
+}
+
+variable "abandon_deletion_policy" {
+  default = "ABANDON"
+}
+
+variable "topic_name" {
+  default = "verify_email"
+}
+
+variable "google_pubsub_subscription_iam_binding_members" {
+  type = list(string)
+  default = ["allUsers"]  
+}
+
+variable "google_pubsub_subscription_name" {
+  default = "cloud_function_subscription"
+
+}
+
+variable "google_storage_bucket_location" {
+  default = "US"
+}
+
+variable "google_storage_bucket_object_name" {
+  default = "serverless-bucket"
+}
+
+variable "google_storage_bucket_object_source" {
+  default = "./serverless.zip"
+}
+
+variable "google_compute_subnetwork_name" {
+  default = "vpc-connector"
+
+}
+
+variable "google_compute_subnetwork_ip_cidr_range" {
+  default = "10.2.0.0/28"
+
+}
+
+variable "google_project_service_name" {
+  default = "vpcaccess.googleapis.com"
+
+}
+
+variable "google_vpc_access_connector_ip_cidr_range" {
+  default = "10.8.0.0/28"
+
+}
+
+variable "google_vpc_access_connector_min_instances" {
+  default = 2
+}
+
+variable "google_vpc_access_connector_max_instances" {
+  default = 3 
+}
+
+variable "google_vpc_access_connector_machine_type" {
+  default = "f1-micro"
+}
+
+variable "google_cloudfunctions2_function_name" {
+  default = "cloud-funcation-process-new-user-message"
+}
+
+variable "google_cloudfunctions2_function" {
+  default = "Process new user messages from Pub/Sub"
+}
+
+variable "google_cloudfunctions2_runtime" {
+  default = "nodejs18"
+}
+
+variable "google_cloudfunctions2_function_entry_point" {
+  default = "processNewUserMessage"
+}
+
+variable "google_cloudfunctions2_function_service_config_availability" {
+  default = "256M"
+}
+
+variable "google_cloudfunctions2_function_service_config_SERVICE_CONFIG_TEST" {
+  default = "config_test"
+}
+
+variable "google_cloudfunctions2_function_event_trigger_event_type" {
+  default = "google.cloud.pubsub.topic.v1.messagePublished"
+}
+
+variable "google_cloudfunctions2_function_event_trigger_retry_policy" {
+  default = "RETRY_POLICY_RETRY"
+}
+
+variable "DB_USER" {
+  default = "webapp"
+}
+
+variable "google_pubsub_subscription_message_retention_duration" {
+  default = "604800s"
+}
+
+variable "google_pubsub_subscription_expiration_policy_ttl" {
+  default = "604800s"
+
+}

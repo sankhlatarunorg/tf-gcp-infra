@@ -53,6 +53,7 @@ resource "google_project_iam_binding" "csye_service_account_metric_writer" {
   role    = var.csye_service_account_metric_writer_role
   members = [ "serviceAccount:${google_service_account.default.email}"]
 }
+
 resource "google_project_iam_binding" "pubsub" {
   project = var.project
   role    = var.pubsub_role
@@ -163,6 +164,102 @@ resource "google_sql_database_instance" "webapp_sql_instance" {
       binary_log_enabled  = true
       enabled             = true
     }
+  }
+}
+
+resource "google_pubsub_topic" "verify_email_topic" {
+  name = var.topic_name
+}
+
+resource "google_pubsub_subscription" "cloud_function_subscription" {
+  name  = var.google_pubsub_subscription_name
+  topic = google_pubsub_topic.verify_email_topic.name
+  ack_deadline_seconds = 10  
+  message_retention_duration = var.google_pubsub_subscription_message_retention_duration
+  expiration_policy {
+    ttl = var.google_pubsub_subscription_expiration_policy_ttl
+  }
+  # push_config {
+  #   push_endpoint = "https://cloudfunctions.googleapis.com/v1/projects/${var.project}/locations/${var.region}/functions/${google_cloudfunctions_function.process_new_user_message.name}"
+  # }
+}
+
+resource "google_storage_bucket" "bucket" {
+  name     = "${var.project}-gcf-source"
+  location = var.google_storage_bucket_location
+  uniform_bucket_level_access = true
+}
+
+resource "google_storage_bucket_object" "csye_object" {
+  name   = var.google_storage_bucket_object_name
+  bucket = google_storage_bucket.bucket.name
+  source = var.google_storage_bucket_object_source 
+}
+
+resource "google_compute_subnetwork" "default" {
+  name          = var.google_compute_subnetwork_name
+  ip_cidr_range = var.google_compute_subnetwork_ip_cidr_range
+  region        = var.region
+  network       =  google_compute_network.csye6225_vpc_network[0].id
+}
+
+resource "google_project_service" "serverless_vpc_access" {
+  service = var.google_project_service_name
+}
+resource "google_vpc_access_connector" "webapp_connector" {
+  name                    = var.serverless_connector_name
+  region                  = var.region
+  network                 = google_compute_network.csye6225_vpc_network[0].self_link
+  ip_cidr_range           = var.google_vpc_access_connector_ip_cidr_range
+  min_instances           = var.google_vpc_access_connector_min_instances
+  max_instances           = var.google_vpc_access_connector_max_instances
+  machine_type            = var.google_vpc_access_connector_machine_type
+  depends_on = [google_project_service.serverless_vpc_access]
+}
+
+# resource "google_vpc_access_connector" "conn" {
+#   name          = "conn"
+#   subnet {
+#     name = google_compute_subnetwork.default.name
+#   }
+#   machine_type = "e2-standard-4"
+# }
+
+# Define the Cloud Function
+resource "google_cloudfunctions2_function" "process_new_user_message" {
+  name        = var.google_cloudfunctions2_function_name
+  description = var.google_cloudfunctions2_function
+  location = var.region
+
+  build_config {
+    runtime = var.google_cloudfunctions2_runtime
+    entry_point =var.google_cloudfunctions2_function_entry_point
+    source {
+      storage_source {
+        bucket = google_storage_bucket.bucket.name
+        object = google_storage_bucket_object.csye_object.name
+      }
+    }
+  }
+  service_config {
+    min_instance_count    = 1
+    available_memory      = var.google_cloudfunctions2_function_service_config_availability
+    timeout_seconds       = 60
+    service_account_email = google_service_account.default.email
+    vpc_connector = google_vpc_access_connector.webapp_connector.name
+    environment_variables = {
+      SERVICE_CONFIG_TEST     = var.google_cloudfunctions2_function_service_config_SERVICE_CONFIG_TEST
+      DB_HOST="${google_sql_database_instance.webapp_sql_instance.private_ip_address}"
+      DB_USER=var.DB_USER
+      DB_PASSWORD="${ random_password.password.result}"
+    } 
+  }
+  depends_on = [ google_sql_database_instance.webapp_sql_instance, google_vpc_access_connector.webapp_connector ]
+  event_trigger {
+    trigger_region = var.region
+    event_type = var.google_cloudfunctions2_function_event_trigger_event_type
+    pubsub_topic = google_pubsub_topic.verify_email_topic.id
+    retry_policy = var.google_cloudfunctions2_function_event_trigger_retry_policy
   }
 }
 
