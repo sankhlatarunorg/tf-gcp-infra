@@ -71,7 +71,8 @@ resource "google_pubsub_subscription_iam_binding" "webapp_subscription_binding" 
 resource "google_compute_region_instance_template" "webapp_vm_instance_template" {
   name = var.webapp_vm_instance_template_name
   machine_type = var.machine_type
-  tags = var.firewall_policy_to_apply_name
+  # tags = var.firewall_policy_to_apply_name
+  tags = ["allow-health-check","load-balancer-backend","http-server","https-server"]
   region = var.region
   depends_on = [ google_sql_database_instance.webapp_sql_instance,  google_service_account.webapp_service_account, google_project_iam_binding.csye_service_account_logging, google_project_iam_binding.csye_service_account_metric_writer]
   metadata = google_compute_project_metadata.web_metadata.metadata
@@ -90,9 +91,6 @@ resource "google_compute_region_instance_template" "webapp_vm_instance_template"
   network_interface {
     network    = google_compute_network.csye6225_vpc_network[0].self_link
     subnetwork = google_compute_subnetwork.webapp.self_link
-    access_config {
-
-    }
   }
   service_account {
     email  = google_service_account.webapp_service_account.email
@@ -108,8 +106,6 @@ resource "google_compute_health_check" "webapp_health_check" {
   http_health_check {
     request_path = "/healthz"
     port = 3000
-    # response = "Health check completed successfully"
-    # port_specification = "USE_SERVING_PORT"
   }
 }
 
@@ -128,28 +124,21 @@ resource "google_compute_region_autoscaler" "webapp_autoscaler" {
 }
 
 resource "google_compute_region_instance_group_manager" "webapp_instance_group_manager" {
-  name               = "webapp-instance-group-manager"
+  name               = var.webapp_instance_group_manager_name
   region             = var.region
-  base_instance_name = "webapp-instance"
+  base_instance_name = var.webapp_base_instance_name
   target_size        = 1
-
-  # depends_on = [ google_compute_region_instance_template.webapp_vm_instance_template ]
   version {
     instance_template = google_compute_region_instance_template.webapp_vm_instance_template.self_link
   }
-
   named_port {
-    name = "app"
-    port = 3000
+    name = var.google_compute_instance_group_manager_named_ports_name
+    port = var.google_compute_instance_group_manager_named_ports_port
   }
-
   auto_healing_policies {
     health_check   = google_compute_health_check.webapp_health_check.self_link
-    initial_delay_sec = 60
+    initial_delay_sec = var.instance_group_autohealing_policy_initial_delay_sec
   }
-
-  # target_pools = [google_compute_target_pool.]
-
 }
 
 resource "google_dns_record_set" "webapp_dns_record_set" {
@@ -157,7 +146,7 @@ resource "google_dns_record_set" "webapp_dns_record_set" {
   type          = var.dns_record_type
   ttl           = var.dns_record_set_ttl
   managed_zone  = var.dns_record_zone
-  rrdatas     = [ google_compute_global_address.global_address.address ]
+  rrdatas     = [ google_compute_global_forwarding_rule.webapp_forwarding_rule.ip_address]
 }
 resource "google_compute_project_metadata" "web_metadata" {
   metadata = {
@@ -200,11 +189,7 @@ resource "google_sql_database_instance" "webapp_sql_instance" {
   deletion_protection = false
   settings {
     tier                = var.database_tier
-    # edition             = var.database_edition
-    # disk_autoresize     = var.database_disk_autoresize
     disk_size           = var.database_disk_size
-    # disk_type           = var.database_disk_type
-    # availability_type   = var.database_availability_type
     ip_configuration {
       ipv4_enabled    = false
       private_network = google_compute_network.csye6225_vpc_network[0].self_link
@@ -228,9 +213,6 @@ resource "google_pubsub_subscription" "cloud_function_subscription" {
   expiration_policy {
     ttl = var.google_pubsub_subscription_expiration_policy_ttl
   }
-  # push_config {
-  #   push_endpoint = "https://cloudfunctions.googleapis.com/v1/projects/${var.project}/locations/${var.region}/functions/${google_cloudfunctions_function.process_new_user_message.name}"
-  # }
 }
 
 resource "google_storage_bucket" "bucket" {
@@ -336,96 +318,45 @@ resource "google_sql_user" "sql_user" {
 
 resource "google_compute_managed_ssl_certificate" "webapp_ssl_cert" {
   provider = google-beta
-  name     = "myservice-ssl-cert"
+  name     = var.google_compute_managed_ssl_certificate_name
   project = var.project 
   managed {
-    domains = ["tarunsankhla.me"]
+    domains = [var.webapp_domain_name]
   }
 }
 
 resource "google_compute_firewall" "webapp_firewall_allow_health_check" {
-  name          = "webapp-firewall-allow-health-check"
+  name          = var.webapp_firewall_allow_health_check_name
   provider      = google-beta
-  direction     = "INGRESS"
+  direction     = var.webapp_firewall_allow_health_check_direction
   network       = google_compute_network.csye6225_vpc_network[0].self_link
   source_ranges = ["130.211.0.0/22", "35.191.0.0/16"]
   allow {
-    protocol = "tcp"
+    protocol = var.webapp_firewall_allow_health_check_protocol
   }
-  target_tags = ["allow-health-check"]
+  target_tags = ["allow-health-check","load-balancer-backend"]
   project = var.project
 }
 
 resource "google_compute_backend_service" "webapp_backend_service" {
   name                    = "webapp-backend-service"
-  project =  var.project
+  project                 =  var.project
   provider                = google-beta
   protocol                = "HTTP"
   port_name               = "my-port"
-  load_balancing_scheme   = "EXTERNAL"
+  load_balancing_scheme   = "EXTERNAL_MANAGED"
   timeout_sec             = 10
-  enable_cdn              = true
-  custom_request_headers  = ["X-Client-Geo-Location: {client_region_subdivision}, {client_city}"]
-  custom_response_headers = ["X-Cache-Hit: {cdn_cache_status}"]
+  # enable_cdn              = true
+  # custom_request_headers  = ["X-Client-Geo-Location: {client_region_subdivision}, {client_city}"]
+  # custom_response_headers = ["X-Cache-Hit: {cdn_cache_status}"]
   health_checks           = [google_compute_health_check.webapp_health_check.id]
+  session_affinity = "NONE"
   backend {
     group           = google_compute_region_instance_group_manager.webapp_instance_group_manager.instance_group
     balancing_mode  = "UTILIZATION"
     capacity_scaler = 1.0
   }
 }
-
-
-# module "gce-lb-http" {
-#   source  = "terraform-google-modules/lb-http/google"
-#   version = "~> 10.0"
-#   name    = "webapp-lb"
-#   project = var.project
-#   # target_tags = [
-#   #   "${var.network_prefix}-group1",
-#   #   module.cloud-nat-group1.router_name,
-#   #   "${var.network_prefix}-group2",
-#   #   module.cloud-nat-group2.router_name
-#   # ]
-#   firewall_networks = [google_compute_network.csye6225_vpc_network[0].self_link]
-
-#   backends = {
-#     default = {
-
-#       protocol    = "HTTP"
-#       port        = 80
-#       port_name   = "http"
-#       timeout_sec = 10
-#       enable_cdn  = false
-
-#       health_check = {
-#         request_path = "/healthz"
-#         port         = 3000
-#       }
-
-#       log_config = {
-#         enable      = true
-#         sample_rate = 1.0
-#       }
-
-#       groups = [
-#         {
-#           group = google_compute_region_instance_group_manager.webapp_instance_group_manager.instance_group
-#         }
-#       ]
-
-#       iap_config = {
-#         enable = false
-#       }
-#     }
-#   }
-# }
-
-# resource "google_compute_global_address" "webapp_global_address" {
-#   provider = google-beta
-#   name     = "webapp-global-address"
-#   project = var.project
-# }
 
 resource "google_compute_url_map" "webapp_url_map" {
   name            = "webapp-url-map"
@@ -434,11 +365,12 @@ resource "google_compute_url_map" "webapp_url_map" {
   default_service = google_compute_backend_service.webapp_backend_service.id
 }
 
-resource "google_compute_target_http_proxy" "webapp_target_http_proxy" {
+resource "google_compute_target_https_proxy" "webapp_target_http_proxy" {
   name     = "webapp-target-http-proxy"
   provider = google-beta
   project = var.project
   url_map  = google_compute_url_map.webapp_url_map.id
+  ssl_certificates = [google_compute_managed_ssl_certificate.webapp_ssl_cert.self_link]
 }
 
 resource "google_compute_global_forwarding_rule" "webapp_forwarding_rule" {
@@ -446,10 +378,9 @@ resource "google_compute_global_forwarding_rule" "webapp_forwarding_rule" {
   project               = var.project
   provider              = google-beta
   ip_protocol           = "TCP"
-  load_balancing_scheme = "EXTERNAL"
-  port_range            = "3000"
-  target                = google_compute_target_http_proxy.webapp_target_http_proxy.id
-  ip_address            = google_compute_global_address.global_address.id
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  port_range            = "443"
+  target                = google_compute_target_https_proxy.webapp_target_http_proxy.id
 }
 
 resource "random_password" "password" {
