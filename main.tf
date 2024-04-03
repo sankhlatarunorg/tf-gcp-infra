@@ -292,6 +292,7 @@ resource "google_cloudfunctions2_function" "process_new_user_message" {
       SERVICE_CONFIG_TEST     = var.google_cloudfunctions2_function_service_config_SERVICE_CONFIG_TEST
       DB_HOST="${google_sql_database_instance.webapp_sql_instance.private_ip_address}"
       DB_USER=var.DB_USER
+      DB_NAME=var.DB_USER
       DB_PASSWORD="${ random_password.password.result}"
     } 
   }
