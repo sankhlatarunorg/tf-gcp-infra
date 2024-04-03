@@ -35,7 +35,7 @@ resource "google_compute_route" "hoproute" {
   next_hop_gateway = var.next_hop_gateway_route
 }
 
-resource "google_service_account" "default" {
+resource "google_service_account" "webapp_service_account" {
   account_id    = var.google_service_account_name
   display_name  = var.google_service_account_name
   project       = var.project 
@@ -44,20 +44,20 @@ resource "google_service_account" "default" {
 resource "google_project_iam_binding" "csye_service_account_logging" {
   project = var.project
   role    = var.csye_service_account_logging_role
-  members = [ "serviceAccount:${google_service_account.default.email}"]
+  members = [ "serviceAccount:${google_service_account.webapp_service_account.email}"]
 }
 
 resource "google_project_iam_binding" "csye_service_account_metric_writer" {
   project = var.project
   role    = var.csye_service_account_metric_writer_role
-  members = [ "serviceAccount:${google_service_account.default.email}"]
+  members = [ "serviceAccount:${google_service_account.webapp_service_account.email}"]
 }
 
 resource "google_project_iam_binding" "pubsub" {
   project = var.project
   role    = var.pubsub_role
   members = [
-    "serviceAccount:${google_service_account.default.email}"
+    "serviceAccount:${google_service_account.webapp_service_account.email}"
     ]
 }
 
@@ -73,7 +73,7 @@ resource "google_compute_region_instance_template" "webapp_vm_instance_template"
   machine_type = var.machine_type
   tags = var.firewall_policy_to_apply_name
   region = var.region
-  depends_on = [ google_sql_database_instance.webapp_sql_instance,  google_service_account.default, google_project_iam_binding.csye_service_account_logging, google_project_iam_binding.csye_service_account_metric_writer]
+  depends_on = [ google_sql_database_instance.webapp_sql_instance,  google_service_account.webapp_service_account, google_project_iam_binding.csye_service_account_logging, google_project_iam_binding.csye_service_account_metric_writer]
   metadata = google_compute_project_metadata.web_metadata.metadata
   metadata_startup_script = templatefile("metadata_script.tpl", {
     DB_USER     = "webapp",
@@ -95,12 +95,12 @@ resource "google_compute_region_instance_template" "webapp_vm_instance_template"
     }
   }
   service_account {
-    email  = google_service_account.default.email
+    email  = google_service_account.webapp_service_account.email
     scopes = var.service_account_scopes_logging
   }
 }
 
-resource "google_compute_health_check" "default" {
+resource "google_compute_health_check" "webapp_health_check" {
   name     = "webapp-health-check"
   provider = google-beta
   project = var.project
@@ -144,7 +144,7 @@ resource "google_compute_region_instance_group_manager" "webapp_instance_group_m
   }
 
   auto_healing_policies {
-    health_check   = google_compute_health_check.default.self_link
+    health_check   = google_compute_health_check.webapp_health_check.self_link
     initial_delay_sec = 60
   }
 
@@ -157,7 +157,7 @@ resource "google_dns_record_set" "webapp_dns_record_set" {
   type          = var.dns_record_type
   ttl           = var.dns_record_set_ttl
   managed_zone  = var.dns_record_zone
-  rrdatas     = [ google_compute_global_address.default.address ]
+  rrdatas     = [ google_compute_global_address.global_address.address ]
 }
 resource "google_compute_project_metadata" "web_metadata" {
   metadata = {
@@ -245,7 +245,7 @@ resource "google_storage_bucket_object" "csye_object" {
   source = var.google_storage_bucket_object_source 
 }
 
-resource "google_compute_subnetwork" "default" {
+resource "google_compute_subnetwork" "webapp__vpc_connector" {
   name          = var.google_compute_subnetwork_name
   ip_cidr_range = var.google_compute_subnetwork_ip_cidr_range
   region        = var.region
@@ -286,7 +286,7 @@ resource "google_cloudfunctions2_function" "process_new_user_message" {
     min_instance_count    = 1
     available_memory      = var.google_cloudfunctions2_function_service_config_availability
     timeout_seconds       = 60
-    service_account_email = google_service_account.default.email
+    service_account_email = google_service_account.webapp_service_account.email
     vpc_connector = google_vpc_access_connector.webapp_connector.name
     environment_variables = {
       SERVICE_CONFIG_TEST     = var.google_cloudfunctions2_function_service_config_SERVICE_CONFIG_TEST
@@ -334,7 +334,7 @@ resource "google_sql_user" "sql_user" {
   password  = random_password.password.result
 }
 
-resource "google_compute_managed_ssl_certificate" "webapp_default" {
+resource "google_compute_managed_ssl_certificate" "webapp_ssl_cert" {
   provider = google-beta
   name     = "myservice-ssl-cert"
   project = var.project 
@@ -343,8 +343,8 @@ resource "google_compute_managed_ssl_certificate" "webapp_default" {
   }
 }
 
-resource "google_compute_firewall" "default" {
-  name          = "default"
+resource "google_compute_firewall" "webapp_firewall_allow_health_check" {
+  name          = "webapp-firewall-allow-health-check"
   provider      = google-beta
   direction     = "INGRESS"
   network       = google_compute_network.csye6225_vpc_network[0].self_link
@@ -356,8 +356,8 @@ resource "google_compute_firewall" "default" {
   project = var.project
 }
 
-resource "google_compute_backend_service" "default" {
-  name                    = "default"
+resource "google_compute_backend_service" "webapp_backend_service" {
+  name                    = "webapp-backend-service"
   project =  var.project
   provider                = google-beta
   protocol                = "HTTP"
@@ -367,7 +367,7 @@ resource "google_compute_backend_service" "default" {
   enable_cdn              = true
   custom_request_headers  = ["X-Client-Geo-Location: {client_region_subdivision}, {client_city}"]
   custom_response_headers = ["X-Cache-Hit: {cdn_cache_status}"]
-  health_checks           = [google_compute_health_check.default.id]
+  health_checks           = [google_compute_health_check.webapp_health_check.id]
   backend {
     group           = google_compute_region_instance_group_manager.webapp_instance_group_manager.instance_group
     balancing_mode  = "UTILIZATION"
@@ -421,35 +421,35 @@ resource "google_compute_backend_service" "default" {
 #   }
 # }
 
-resource "google_compute_global_address" "default" {
-  provider = google-beta
-  name     = "default"
-  project = var.project
-}
+# resource "google_compute_global_address" "webapp_global_address" {
+#   provider = google-beta
+#   name     = "webapp-global-address"
+#   project = var.project
+# }
 
-resource "google_compute_url_map" "default" {
-  name            = "default"
+resource "google_compute_url_map" "webapp_url_map" {
+  name            = "webapp-url-map"
   provider        = google-beta
   project = var.project
-  default_service = google_compute_backend_service.default.id
+  default_service = google_compute_backend_service.webapp_backend_service.id
 }
 
-resource "google_compute_target_http_proxy" "default" {
-  name     = "default"
+resource "google_compute_target_http_proxy" "webapp_target_http_proxy" {
+  name     = "webapp-target-http-proxy"
   provider = google-beta
   project = var.project
-  url_map  = google_compute_url_map.default.id
+  url_map  = google_compute_url_map.webapp_url_map.id
 }
 
-resource "google_compute_global_forwarding_rule" "default" {
-  name                  = "default"
+resource "google_compute_global_forwarding_rule" "webapp_forwarding_rule" {
+  name                  = "webapp-forwarding-rule"
   project               = var.project
   provider              = google-beta
   ip_protocol           = "TCP"
   load_balancing_scheme = "EXTERNAL"
   port_range            = "3000"
-  target                = google_compute_target_http_proxy.default.id
-  ip_address            = google_compute_global_address.default.id
+  target                = google_compute_target_http_proxy.webapp_target_http_proxy.id
+  ip_address            = google_compute_global_address.global_address.id
 }
 
 resource "random_password" "password" {

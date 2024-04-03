@@ -25,15 +25,15 @@ variable "network" {
 }
 
 variable "subnetwork_webapp" {
-  default = "webapp-subnetwork"
+  default = "webapp-subnetwork-1"
 }
 
 variable "subnetwork_db" {
-  default = "db-subnetwork"
+  default = "db-subnetwork-1"
 }
 
 variable "route_hop" {
-  default = "network-route"
+  default = "network-route-1"
 }
 
 variable "vmInstance" {
@@ -134,7 +134,7 @@ variable "allow_postgres" {
 }
 
 variable "global_address_name" {
-  default = "global-psconnect-ip-1"
+  default = "global-psconnect-ip-2"
 }
 
 variable "global_address_purpose" {
@@ -222,7 +222,7 @@ variable "service_account_scopes_csye_vm" {
 }
 variable "vpc_network_list" {
   type = list(string)
-  default = ["csye6225-network-01"]
+  default = ["csye6225-network-08"]
 }
 
 variable "database_version" {
@@ -311,7 +311,7 @@ variable "deletion_policy" {
 }
 
 variable "serverless_connector_name" {
-  default = "serverless-connector"
+  default = "serverless-connector-1"
 
 }
 
@@ -355,7 +355,7 @@ variable "google_storage_bucket_object_source" {
 }
 
 variable "google_compute_subnetwork_name" {
-  default = "vpc-connector"
+  default = "vpc-connector-webapp"
 
 }
 
