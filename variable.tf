@@ -116,7 +116,7 @@ variable "machine_type" {
 }
 
 variable "base_image_name" {
-  default = "csye6225-image-a7-demo"
+  default = "csye6225-image-a8"
 }
 
 
@@ -442,7 +442,7 @@ variable "webapp_vm_instance_template_name" {
 }
 
 variable "webapp_instance_group_manager_name" {
-  default = "webapp-instance-group-manager"
+  default = "webapp-instance-group-manager-1"
 }
 
 variable "webapp_base_instance_name" {
@@ -478,4 +478,207 @@ variable "webapp_firewall_allow_health_check_protocol" {
 
 variable "webapp_firewall_allow_health_check_direction" {
   default = "INGRESS" 
+}
+
+variable "webapp_instance_tags" {
+  default =  ["allow-health-check","load-balancer-backend","http-server","https-server"]
+}
+
+variable "google_compute_health_check_name" {
+  default = "webapp-health-check"
+}
+
+variable "http_health_check_path" {
+  default = "/healthz"
+  
+}
+
+variable "http_health_check_port" {
+  default = 3000
+  
+}
+
+
+variable "http_health_check_port_specification"{
+  default = "USE_FIXED_PORT"
+}
+
+
+variable "http_health_check_proxy_header"{ 
+  default = "NONE"
+  
+}
+
+variable "webapp_autoscaler_name" {
+ default = "webapp-autoscaler" 
+}
+
+variable "google_compute_region_autoscaler_max_replicas" {
+  default = 3
+}
+
+variable "google_compute_region_autoscaler_min_replicas" {
+  default = 1
+}
+
+variable "google_compute_region_autoscaler_cool_down_period_sec" {
+  default = 60  
+}
+
+variable "google_compute_region_autoscaler_cpu_utilization_target" {
+  default = 0.05 
+}
+
+variable "google_compute_region_instance_group_manager_target" {
+  default =1
+  
+}
+
+variable "google_compute_subnetwork_private_ip_google_access" {
+  default = true
+  
+}
+
+variable "webapp_sql_instance_deletion_protection" {
+  default = false
+}
+
+variable "google_sql_database_instance_ip_config_ipv4_enabled" {
+  default = false
+  
+}
+
+variable "google_sql_database_instance_backup_configuration_log_enabled" {
+  default = true
+  
+}
+
+variable "google_sql_database_instance_backup_configuration_binary_log_enabled" {
+  default = true
+}
+
+variable "google_pubsub_subscription_ack_deadline" {
+  default = 10
+  
+}
+
+variable "google_storage_bucket_uniform_bucket_level_access" {
+  default = true
+  
+}
+
+variable "google_cloudfunctions2_function_service_config_min_instances" {
+  default = 1
+  
+}
+
+variable "google_cloudfunctions2_function_service_config_timeout" {
+  default = 60
+  
+}
+
+variable "google_compute_firewall_source_ranges" {
+  default = ["130.211.0.0/22", "35.191.0.0/16"]
+  
+}
+
+variable "google_compute_firewall_target_tags" {
+  default = ["allow-health-check","load-balancer-backend"]
+  
+}
+
+variable "google_compute_backend_service_name" {
+  default = "webapp-backend-service"
+}
+
+variable "google_compute_backend_service_protocol" {
+  default = "HTTP"
+  
+}
+
+variable "google_compute_backend_service_port_name" {
+  default = "http"
+}
+
+variable "google_compute_backend_service_load_balancing_scheme" {
+  default = "EXTERNAL_MANAGED"
+}
+
+variable "google_compute_backend_service_timeout_sec" {
+  default = 20
+}
+
+variable "google_compute_backend_service_session_affinity" {
+  default = "NONE"
+}
+
+variable "google_compute_backend_service_backend_balancing_mode" {
+  default = "UTILIZATION"
+  
+}
+
+
+variable "google_compute_backend_service_capacity_scaler" {
+  default = 1.0
+  
+}
+
+variable "google_compute_backend_service_log_enabled" {
+  default = true
+  
+}
+
+variable "google_compute_backend_service_log_sample_rate" {
+  default = 1
+}
+
+variable "webapp_url_map_name" {
+  default =  "webapp-url-map"
+}
+
+variable "google_compute_target_https_proxy_name" {
+  default = "webapp-target-https-proxy"
+  
+}
+
+
+variable "google_compute_global_forwarding_rule_name" {
+  default = "webapp-forwarding-rule"
+}
+
+variable "google_compute_global_forwarding_rule_ip_protocol" {
+  default = "TCP"
+  
+}
+
+variable "google_compute_global_forwarding_rule_load_balancing_scheme" {
+  default = "EXTERNAL_MANAGED"
+
+} 
+
+variable "google_compute_global_forwarding_rule_port_range" {
+  default = "443"
+}
+
+variable "random_password_length" {
+  default = 16
+  
+}
+
+variable "random_password_special" {
+  default = false
+  
+}
+
+variable "random_password_override_special" {
+  default = "!#$%&*()-_=+[]{}<>:?"
+  
+}
+
+variable "random_id_instance_id" {
+  default = 8
+}
+
+variable "google_compute_region_instance_template_auto_delete" {
+  default = true
 }
