@@ -196,7 +196,7 @@ variable "firewall_rules_policy"  {
 
 variable "firewall_policy_to_apply_name" {
   type = list(string)
-  default =[ "allow-port-3000", "deny-port-22"]
+  default =[ "allow-port-3000", "deny-port-22","load-balancer-backend"]
   
 }
 
@@ -281,6 +281,11 @@ variable "dns_record_zone" {
 
 variable "dns_record_set_name" {
   default = "tarunsankhla.me."
+}
+
+variable "webapp_domain_name" {
+  default = "tarunsankhla.me"
+  
 }
 
 variable "dns_record_set_ttl" {
@@ -434,4 +439,43 @@ variable "google_pubsub_subscription_expiration_policy_ttl" {
 
 variable "webapp_vm_instance_template_name" {
   default = "webapp-vm-instance-template"
+}
+
+variable "webapp_instance_group_manager_name" {
+  default = "webapp-instance-group-manager"
+}
+
+variable "webapp_base_instance_name" {
+  default = "webapp-instance" 
+}
+
+variable "google_compute_instance_group_manager_named_ports_name" {
+  default = "http"
+  
+}
+
+variable "google_compute_instance_group_manager_named_ports_port" {
+  default = 3000
+  
+}
+
+variable "instance_group_autohealing_policy_initial_delay_sec" {
+  default = 60
+  
+}
+
+variable "google_compute_managed_ssl_certificate_name" {
+  default = "webapp-ssl-cert"
+}
+
+variable "webapp_firewall_allow_health_check_name" {
+  default = "webapp-firewall-allow-health-check"
+}
+
+variable "webapp_firewall_allow_health_check_protocol" {
+  default = "tcp"
+}
+
+variable "webapp_firewall_allow_health_check_direction" {
+  default = "INGRESS" 
 }
