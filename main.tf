@@ -152,13 +152,13 @@ resource "google_compute_region_instance_group_manager" "webapp_instance_group_m
 
 }
 
-# resource "google_dns_record_set" "webapp_dns_record_set" {
-#   name          = var.dns_record_set_name
-#   type          = var.dns_record_type
-#   ttl           = var.dns_record_set_ttl
-#   managed_zone  = var.dns_record_zone
-#   rrdatas     = [ google_compute_region_instance_template.webapp_vm_instance_template.network_interface[0].access_config[0].nat_ip ]
-# }
+resource "google_dns_record_set" "webapp_dns_record_set" {
+  name          = var.dns_record_set_name
+  type          = var.dns_record_type
+  ttl           = var.dns_record_set_ttl
+  managed_zone  = var.dns_record_zone
+  rrdatas     = [ google_compute_global_address.default.address ]
+}
 resource "google_compute_project_metadata" "web_metadata" {
   metadata = {
     "DB_NAME"       = var.webapp_DB_Name
