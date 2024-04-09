@@ -23,3 +23,6 @@ enable cloud sql admin api
 
 change prjoect name
 change credentials
+
+terraform apply -var-file="terraform-tfvars/terraform.tfvars"
+add Cloud KMS CryptoKey Encrypter/Decrypter to role
