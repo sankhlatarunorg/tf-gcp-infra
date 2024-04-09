@@ -218,7 +218,7 @@ variable "service_account_scopes" {
 
 variable "service_account_scopes_csye_vm" {
   type = list(string)
-  default = ["logging-write", "monitoring", "monitoring-read", "monitoring-write"]
+  default = ["logging-write", "monitoring", "monitoring-read", "monitoring-write","cloud-kms-admin"]
 }
 variable "vpc_network_list" {
   type = list(string)
@@ -348,9 +348,9 @@ variable "google_pubsub_subscription_name" {
 }
 
 variable "google_storage_bucket_location" {
-  default = "US"
+  default = "us-central1"
 }
-
+ 
 variable "google_storage_bucket_object_name" {
   default = "serverless-bucket"
 }
@@ -681,4 +681,35 @@ variable "random_id_instance_id" {
 
 variable "google_compute_region_instance_template_auto_delete" {
   default = true
+}
+
+variable "webapp_keyring_name" {
+  default = "keyring-webapp"
+  type = string
+}
+
+variable "webapp_key_name" {
+  default = "webapp-key"
+  type = string
+}
+
+variable "sql_instance_key_name" {
+  default = "sql-instance-key"
+  type = string
+}
+
+variable "bucket_storage_key_name" {
+  default = "bucket-storage-key"
+  type = string
+}
+
+variable "rotation_period_key" {
+  default = "2592000s"
+  type = string
+  
+}
+
+variable "lifecycle_prevent_destroy" {
+  default = true
+  type = bool
 }
