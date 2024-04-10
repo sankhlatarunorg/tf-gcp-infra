@@ -4,13 +4,12 @@ resource "google_kms_key_ring" "webapp_keyring" {
 }
 
 resource "google_kms_crypto_key" "webapp_key" {
-  name     = "webapp-key-${random_id.random_db_instance_id.hex}"
-  key_ring = google_kms_key_ring.webapp_keyring.id
-  purpose = "ENCRYPT_DECRYPT"
+  name      = "webapp-key-${random_id.random_db_instance_id.hex}"
+  key_ring  = google_kms_key_ring.webapp_keyring.id
+  purpose   = var.kms_crypto_key_purpose
   rotation_period   = var.rotation_period_key
-
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy = var.prevent_destroy
   }
 }
 
@@ -20,7 +19,7 @@ resource "google_kms_crypto_key" "sql_instance_key" {
   rotation_period   = var.rotation_period_key
 
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy = var.prevent_destroy
   }
 }
 
@@ -30,6 +29,6 @@ resource "google_kms_crypto_key" "bucket_storage_key" {
   rotation_period   = var.rotation_period_key
   
   lifecycle {
-    prevent_destroy = false
+    prevent_destroy = var.prevent_destroy
   }
 }
