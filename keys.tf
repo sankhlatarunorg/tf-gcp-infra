@@ -9,7 +9,7 @@ resource "google_kms_crypto_key" "webapp_key" {
   purpose   = var.kms_crypto_key_purpose
   rotation_period   = var.rotation_period_key
   lifecycle {
-    prevent_destroy = var.prevent_destroy
+    prevent_destroy = false
   }
 }
 
@@ -19,7 +19,7 @@ resource "google_kms_crypto_key" "sql_instance_key" {
   rotation_period   = var.rotation_period_key
 
   lifecycle {
-    prevent_destroy = var.prevent_destroy
+    prevent_destroy = false
   }
 }
 
@@ -29,6 +29,6 @@ resource "google_kms_crypto_key" "bucket_storage_key" {
   rotation_period   = var.rotation_period_key
   
   lifecycle {
-    prevent_destroy = var.prevent_destroy
+    prevent_destroy = false
   }
 }
