@@ -8,8 +8,8 @@ provider "google" {
 data "google_project" "current" {
 }
 locals {
-    # cloud_storage_service_account = "service-${data.google_project.current.number}@gs-project-accounts.iam.gserviceaccount.com"
-    cloud_storage_service_account = "service-738558818349@gs-project-accounts.iam.gserviceaccount.com"
+    cloud_storage_service_account = "service-${data.google_project.current.number}@gs-project-accounts.iam.gserviceaccount.com"
+    //cloud_storage_service_account = "service-738558818349@gs-project-accounts.iam.gserviceaccount.com"
 }
 
 resource "google_dns_record_set" "webapp_dns_record_set" {

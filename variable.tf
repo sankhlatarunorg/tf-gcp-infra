@@ -713,3 +713,9 @@ variable "lifecycle_prevent_destroy" {
   default = true
   type = bool
 }
+
+variable "role_cryptoKeyEncrypterDecrypter" {
+  default = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  type = string
+  
+}

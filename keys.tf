@@ -1,10 +1,10 @@
 resource "google_kms_key_ring" "webapp_keyring" {
-  name     = var.webapp_keyring_name
+  name     = "keyring-csye-${random_id.random_db_instance_id.hex}"
   location = var.region
 }
 
 resource "google_kms_crypto_key" "webapp_key" {
-  name     = var.webapp_key_name
+  name     = "webapp-key-${random_id.random_db_instance_id.hex}"
   key_ring = google_kms_key_ring.webapp_keyring.id
   purpose = "ENCRYPT_DECRYPT"
   rotation_period   = var.rotation_period_key
@@ -15,7 +15,7 @@ resource "google_kms_crypto_key" "webapp_key" {
 }
 
 resource "google_kms_crypto_key" "sql_instance_key" {
-  name     = var.sql_instance_key_name
+  name     = "sql-instance-key-${random_id.random_db_instance_id.hex}"
   key_ring = google_kms_key_ring.webapp_keyring.id
   rotation_period   = var.rotation_period_key
 
@@ -25,7 +25,7 @@ resource "google_kms_crypto_key" "sql_instance_key" {
 }
 
 resource "google_kms_crypto_key" "bucket_storage_key" {
-  name     = var.bucket_storage_key_name
+  name     = "bucket-storage-key-${random_id.random_db_instance_id.hex}"
   key_ring = google_kms_key_ring.webapp_keyring.id
   rotation_period   = var.rotation_period_key
   
